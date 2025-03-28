@@ -1,26 +1,29 @@
-from datasets import Dataset, DatasetDict, IterableDataset, IterableDatasetDict
+from datasets import Dataset, DatasetDict, IterableDataset, IterableDatasetDict, load_dataset
 
 
 def align_labels_with_tokens(
-    labels: list[int],
-    word_ids: list[int | None],
+        labels: list[int],
+        word_ids: list[int | None],
 ) -> list[int]:
     """
     Align labels with tokenized word IDs, ensuring special tokens are ignored (-100).
-
-    The first rule we’ll apply is that special tokens get a label of -100.
-    This is because by default -100 is an index that is ignored in the loss function we will use (cross entropy).
-    Then, each token gets the same label as the token that started the word it’s inside, since they are part of the same entity.
-    For tokens inside a word but not at the beginning, we replace the B- with I- (since the token does not begin the entity):
-
-    Args:
-        labels: List of token labels.
-        word_ids: List of word IDs.
-
-    Returns:
-        A list of aligned labels.
     """
-    # Write your code here.
+    aligned_labels = []
+    previous_word_idx = None
+
+    for i, word_idx in enumerate(word_ids):
+        if word_idx is None:  # Special token
+            aligned_labels.append(-100)
+        elif word_idx != previous_word_idx:
+            # New word: Use the label of the first token in the word
+            aligned_labels.append(labels[word_idx])
+        else:
+            # Inside the word: Use the "I-" label
+            aligned_labels.append(labels[word_idx] if labels[word_idx] > 0 else -100)
+
+        previous_word_idx = word_idx
+
+    return aligned_labels
 
 
 def tokenize_and_align_labels(examples: dict, tokenizer) -> dict:
@@ -55,29 +58,20 @@ def tokenize_and_align_labels(examples: dict, tokenizer) -> dict:
     return tokenized_inputs
 
 
-def build_dataset() -> DatasetDict | Dataset | IterableDatasetDict | IterableDataset:
+def build_dataset() -> DatasetDict:
     """
     Build the dataset.
 
     Returns:
-        The dataset.
-
-
-    Below is an example of how to load a dataset.
-
-    ```python
-    from datasets import load_dataset
-
-    raw_datasets = load_dataset('tomaarsen/MultiCoNER', 'multi')
-    ```
-
-    You can replace this with your own dataset. Make sure to include
-    the `test` split and ensure that it is the same as the test split from the MultiCoNER NER dataset,
-    Which means that:
-        raw_datasets["test"] = load_dataset('tomaarsen/MultiCoNER', 'multi', split="test")
+        The dataset in the form of a DatasetDict.
     """
-    # Write your code here.
+    # 例子：加载MultiCoNER数据集
+    raw_datasets = load_dataset('tomaarsen/MultiCoNER', 'multi')
+
+    # 添加对测试数据集的引用
     raw_datasets["test"] = load_dataset('tomaarsen/MultiCoNER', 'multi', split="test")
+
+    return raw_datasets
 
 
 def preprocess_data(raw_datasets: DatasetDict, tokenizer) -> DatasetDict:

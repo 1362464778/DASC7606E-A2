@@ -60,6 +60,13 @@ def compute_metrics(eval_predictions: EvalPrediction) -> dict[str, float]:
         zero_division=0
     )
     
+    # Log the results into log.txt
+    with open("log.txt", "a") as log_file:
+        log_file.write(f"Precision: {results['overall_precision']:.4f}\n")
+        log_file.write(f"Recall: {results['overall_recall']:.4f}\n")
+        log_file.write(f"F1 Score: {results['overall_f1']:.4f}\n")
+        log_file.write("-" * 40 + "\n")  # Separator for readability in the log file
+        
     # Return the overall metrics
     return {
         "precision": results["overall_precision"],
